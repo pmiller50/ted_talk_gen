@@ -4,6 +4,7 @@
 
 variables/
 data/
+models/
 
 # Zip files
 *.zip
