@@ -11,7 +11,7 @@ models/
 
 *.pickle
 
-all_*.txt
+all_t*.txt
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
