@@ -10,6 +10,8 @@ Interest in Artificial Intelligence and text generation spiked in May of 2020, w
 
 This project attempts to pursue if and how a simple text generator could be built, and whether the quality of the output text could pass as something legible and understood by humans.
 
+The end goal would be to use a machine learning model to create a quality TED talk, or at least a paragraph or two of one.
+
 ## 2. Text Generator Inner Workings
 
 There are many published articles, blog posts, and YouTube video tutorials to assist in describing how to build a text generator (cited below). Most articles describe a technique in how one could employ a recurrent neural network (RNN), specifically a Long Short Term Memory RNN.
@@ -32,109 +34,197 @@ Current generators can choose to base the model training on either:
 
 A single character model, for example, would use a sequence of characters as its input variables (features), then predict a single target character.
 
-For example, in the sentence "Welcome to my TED talk.", a model uses a sequence length of 8, would use the first 8 characters as its input variables, in order to predict the 9th character.
+For example, in the sentence **"Welcome to my TED talk."**, a model uses a sequence length of 8, would use the first 8 characters as its input variables, in order to predict the 9th character.
 
 ![Image](./images/welcome_1.png)
 
+Similar to a sliding window, the next sequence of characters is moved over by one, in order to add a row for the next sample.
+
+![Image](./images/welcome_2.png)
+
+This process then continues for every possible sequence in the corpus. This understandably creates a large amount of input data, which could lead to problems when running the models if the hardware lacks the necessary memory.
+
+
 ## 2. Data Collection
 
-All text generation models require a group of text, also called a corpus
+All text generation models require a group of text, also called a corpus. Many examples published in blog posts or YouTube tutorials use freely available books such as Shakespeare, or Alice in Wonderland.
 
+For this project, in order to create a model to generate text in the spirit of a TED talk, the input data must naturally consist of text from the TED.com web site.
+
+A Python program using the BeautifulSoup library scans the [TED.com libary browse page](https://www.ted.com/talks) to retrieve a list of urls for all talks in English. This list is then fed into another BeautifulSoup scraper, which captures the transcript for every talk.
+
+The web scraper creates a Pandas Dataframe of **4,384** TED talks.
 
 
 ## 3. Data Cleaning & Pre-Processing
 
+Data cleaning was fairly minimal, although there were 103 TED talks that were missing a transcript for whatever reason. Having over 4000 talks is more than enough for the model, so any row with missing data was dropped.
 
-**Columns included in feature set:**
+The TED web site uses tags to identify what topics are related to a talk, such as science, business, climate change, society, etc. 
 
-|Feature|Type|Description|
-|---|---|---|
-|protestnumber|int|Number of protests that year in specific country|
-|protesterviolence|int(binary)|Indicates whether protester enacted violence|
-|pop_total|float|Population of country where protest takes place|
-|pop_density|float|Population density of country where protest takes place|
-|prosperity_2020|float|Prosperity index of country the year protest takes place|
-|region_Africa|int (binary)|Country is in Africa|
-|region_Asia|int (binary)|Country is in Asia|
-|region_Central America|int  (binary)|Country is in Central America|
-|region_Europe|int (binary)|Country is in Europe|
-|region_MENA|int (binary)|Country is in the Middle East/North Africa|
-|region_North America|int (binary)|Country is in North America|
-|region_Oceania|int (binary)|Country is in Oceania|
-|region_South America|int (binary)|Country is in South America|
-|protest_size_category_Less than 50|int (binary)|Number of participants <50|
-|protest_size_category_50-99|int (binary)|50 - 99 participants|
-|protest_size_category_100-999|int (binary)|100 - 999 participants|
-|protest_size_category_1,000-4,999|int (binary)|1,000 - 4,999 participants|
-|protest_size_category_5,000-9,999|int (binary)|5,000 - 9,999 participants|
-|protest_size_category_10,000-100,000|int (binary)|10,000 - 100,000 participants|
-|protest_size_category_Over 100,000|int (binary)|Number of participants >100,000|
-|protester_id_type_civil_human_rights|int (binary)|Indicates participants are civil/human rights group|  
-|protester_id_type_ethnic_group|int (binary)|Indicates participants are ethnic group|
-|protester_id_type_locals_residents|int(binary)|Indicates participants are local residents|
-|protester_id_type_pensioners_retirees|int (binary)|Indicates participants are pensioner/retirees|
-|protester_id_type_prisoners|int (binary)|Indicates participants are prisoners|
-|protester_id_type_protestors_generic|int (binary)|Indicates participants are generic group|
-|protester_id_type_religious_group|int (binary)|Indicates participants are from religious group|    
-|protester_id_type_soldiers_veterans|int (binary)|Indicates participants are soldiers/veterans|
-|protester_id_type_students_youth|int (binary)|Indicates participants are students/youth|
-|protester_id_type_victims_families|int (binary)|Indicates participants are families of victims|
-|protester_id_type_women|int (binary)|Indicates participants are primarily groups of women|
-|protester_id_type_workers_unions|int (binary)|Indicates participants are union members or workers|
-|labor_wage_dispute|int( binary)|Protest motivation is labor & wage disputes|
-|land_farm_issue|int (binary)|Protest motivation is land and farming conflict|
-|police_brutality|int (binary)|Protest motivation is police brutality|
-|political_behavior_process|int (binary)|Protest motivation is political behavior or process|
-|price increases_tax_policy|int (binary)|Protest motivation is tax increase/tax policy|
-|removal_of_politician|int (binary)|Protest motivation is removal of politician(s)|
-|social_restrictions|int (binary)|Protest motivation associated with social restrictions|
+The tags column as scraped was stored as one string. In order to sort and group by tag values, the tag labels were extracted so the column contained a list of separate tag values.
+
+Other items such as number of views, word count and character count were calculated and inserted as new columns into the data set.
 
 
+## 4. Exploratory Data Anaylsis
 
+TED has become a very popular web site, as shown by the growth in number of TED talks posted to the site, from 2006 through early 2021.
 
-## 4. Exploratory Datat Anaylsis
+![Image](./images/talks_by_year.png)
 
-After the end of the data cleaning phase, we are left with one large main dataframe, which contains around 15,000 rows of data. At this stage, all categorical features columns have been encoded into a large collection of binary columns to represent each country, protestor category, protester type, etc. The new total number of columns at this state becomes 235.
+One initial idea for this project was to create several text generation models, one for each of the five most common tag values in the TED talk dataset. However, after beginning the modeling phase, I realized this was adding a level of unnecessary level of complexity.
 
-Some analysis reveals the distribution of some of the input features.
+This chart shows the most commonly used tags by all talks in English on the TED site.
 
-![Protester ID Types](./images/Graph-ProtesterIdType.png)
+![Image](./images/talks_popular_tags.png)
 
-<img src="./images/protest_size_categories.png" width="500" height="250">
+The corpus ultimately used by the final models was created by combining the transcript text of the twenty most viewed talks on the site.
 
-
-
-<br>
-
-After considering the possible effects using all of the encoded country names, we determined that doing that might add too many unimportant features, since a protest's general location is captured in a 'Region' field.
-
-Some extra analysis was done running the text contained in the **notes** field through a Natural Language Processor, but this could have introduced information that is too highly correlated to the model's target variables, and was Ultimately not used as an input feature.  For example, a negative description in the **notes** field might skew the results.
-
-After removing all country and any other features deemed unnecessary, the set of data to be passed into our models was reduced to approximately 70 columns.
+Corpus details:
+* Approximately 270,000 characters
+* File size 268 KB
 
 
 ## 5. Modeling
 
-At first glance, we were presented with a multi-label classification problem i.e. a government can have multiple responses to the same protest. For these reasons, we initially built a couple of models: a Neural Network and a sklearn Multilabel Classifier using bagging and random forests ensemble methods. Our neural network model was promising given the first iteration, but we quickly realized we could not interpret any meaningful insights from it. Our Multilabel Classifier did not perform well.
+Configuring the exact specifications for neural networks does not follow an exact script, leaving much to the imagination of the developer.  
 
-For the second modeling effort, we built seven different logistic regressions for each of our target variables, effectively running a binary classification on each class. The results for these models varied widely and predictions were not reliable for classes that were less frequent in the data. This is a pitfall for having massively imbalanced data. More importantly to our interests, the violent responses were massively underrepresented.
+A common corpus was used for all modeling. It was left in its original "Sentence case" format, as opposed to converting everything to lower-case, in an attempt to have the model predict sentences that were more readable.
 
-The third modeling effort was a slight spinoff from our second modeling effort. First, we ran a binary logistic regression on whether or not the state government ignored a protest. After running this model, we filtered our data to exclude points where the government did not ignore a protest (i.e. which can be interpreted as when the government did respond). We then ran six different binary logistic regressions for each of the remaining six variables. Treating the ignore logistic regression separately reduced imbalances in our data and improved our scores across the board, especially for our columns of interest: the violent responses.
+The following symbols were removed, but some common punctuation such as periods and commas were left in
 
-Given a decent product, we ran a gridsearch on several hyperparameters with an emphasis on the 'class_weight' of our logistic regression, which effectively penalizes wrong predictions for the class at hand based on a ratio default is 1:1).
+Creative decisions are made regarding:
+* Number of layers
+* Dropout / Early stopping
+* Number of nodes
+* Batch size
+* How many epochs / fits
 
-We even went a step further and grouped all three of the violent responses--beatings, killings, and shootings--into one 'violent_response' column in order to reduce imbalances even more. However, this did not increase the scores of our model.
+My analysis covered a wide spectrum of choices, but in the interest of clarity, they were narrowed down to three model choices.
 
-Please see the images folder in our repo for our final modeling technique's performance metrics, confusion matrices, and AUC plots.
+#### Model 1
+
+* Sequence length: **40 characters**
+* One LSTM layer with 1,000 nodes
+* 20% Dropout layer
+* Output layer
+
+#### Model 2
+
+* Sequence length: **40 characters**
+* Input LSTM layer with 1,000 nodes
+* 20% Dropout layer
+* LSTM layer with 256 nodes
+* 20% Dropout layer
+* Output layer
+
+#### Model 3
+* Sequence length: **80 characters**
+* Input LSTM layer with 1,200 nodes
+* 20% Dropout layer
+* LSTM layer with 600 nodes
+* 20% Dropout layer
+* LSTM layer with 200 nodes
+* 20% Dropout layer
+* Output layer
 
 
 ## 6. Evaluation & Analysis
 
+Normal machine learning metrics such as accuracy, or recall apply to the performance of how well a model might predict one character, but there is not feasible way (at least that I'm aware of) to judge how well text is human-readable. For the generated text, I just used a simple eye test to examine a model's output.
+
+In order to test a model, a randomly selected seed sequence is loaded into the model. This is chosen from one of the 260,000 sequences of 40 characters.
+
+#### Model 1, after 50 fits.
+
+Seed sequence: `ossibility of feelings more complex than`
+
+Predicted text (original sequence in bold):
+> **ossibility of feelings more complex than** pity no poysibility of a convectton an halpcue showe thong
+0Nddy ehe seanne, imsws as agt torns to wrrke It makes our reaiy But in thes mimenonth rastros of
+thit senfars fou coun in toe lon nntt, an Por gxln bilters are thle in wores wou can da lone thes.
+Soe danlud the bay And I shink thet shese is some weird, thing that I had doee taal an eupiaten and
+the same tari.toer And sntet. So the first asowcrt onet dodntt mn, krienmitels baca anl anyir beele
+Mline oa that toyeme tearen temaiti wi tooulliy stress is taro your ltee but aosi toe, bno she way
+for thar wilh wants oo Nn E ca So
+
+For comparison, here is the original text from the original corpus:
+>**ossibility of feelings more complex than** pity no possibility of a connection as human equals. I must
+say that before I, went to the U.S. I didn’t consciously identify as African. But in the U.S.
+whenever Africa came up people turned to me. Never mind that I knew nothing about places like
+Namibia. But I did come to embrace this new identity and in many ways I,think of myself now as
+African. Although I still get quite irritable when Africa is referred to as a country the most,
+recent example being my otherwise wonderful flight from Lagos two days ago in which there was an
+announcement on the, Virgin flight about the charity work in India Africa and other countries. So
+after I had spent some years in the U.S.
+
+#### Model 1, after 150 fits.
+
+Seed sequence: `hook up a heartlung bypass machine and h`
+
+Predicted text (original sequence in bold):
+> **hook up a heartlung bypass machine and h**ave a surgery where it was a tube going into my artery and
+then appear to not breathe while they were oxygenating mo bndnk lhse In net pribtiing whth these. I
+retimet leve abentiiel th resetra for lasy aanr A den pincten M wan able to fold my breath.fos over
+seven minutes tni modh dald and met jetsisl richt Iu tere be amuehseres that havgsn ms putthcie
+beaause thiy want dav fueving. And soo canns yas so luth fareee them now.se diturss rorech that ges
+anoo have noomi toeer beels tisen. A dn M want to hak a peverr wfat I cou in io a peroll oolte and
+a hilf mi d spress northen that wa ne sm
+
+
+For comparison, here is the original text from the original corpus:
+>**hook up a heartlung bypass machine and h**ave a surgery where it was a tube going into my artery and
+then appear to not breathe while they were oxygenating my blood? Which was another insane idea
+obviously. Then I thought about the craziest idea of all the to actually do it. To actually try to
+hold my breath past the point that doctors would consider you brain dead. So I started researching
+into pearl divers. You know because they go down for four minutes on one breath. And when I was
+researching pearl divers I found the world of freediving. It was the most amazing thing that I ever
+discovered
+
+As one can see, the model does produce an accurate prediction of the seed sentence, before venturing into more incomprehensible word salad. Is this considered text generation? Possibly.
+
+---
+
+#### Model 2, after 50 fits.
+
+Seed sequence: `autifully patterned basket made of dyed`
+
+Predicted text (original sequence in bold):
+> **autifully patterned basket made of dyed** rarfe of the stress response and they were the people who were their mives they were srarting and they were the people who see the stress response as the problems who would have to be seady to be shat with the of me. And the people who seally have to do this shat we could be a couple of shings. The of the task with this probess over and ouer the way they went tp the people who see when they go the same thing. When I was the problem is to meet the soumds and they started the shingest fay that they were brthentic and the way the people who seally want to be a person with the sement o
+
+
+For comparison, here is the original text from the original corpus:
+>**autifully patterned basket made of dyed** raffia that his brother had made. I was startled. It had not occurred to me that anybody in his family could actually make something. All I had heard about them was how poor they were so that it had become impossible for me to see them as anything else but poor. Their poverty was my single story of them. Years later I thought about this when I left Nigeria to go to university in the United States. I was 19. My American roommate was shocked by me. She asked where I had learned to speak English so well and was confused when I said that Nigeria happened to
+
+
+#### Model 2, after 150 fits.
+
+Seed sequence: `re can do it faster. Lowcost providers c`
+
+Predicted text (original sequence in bold):
+> **re can do it faster. Lowcost providers c**an do it cheaper. So what really matters are the more rightbrained creative conceptual kinds of abilities. This is no surprise though if you look at the insights of contemporary psychology. It turns out that we cant even be in a group of people without instingtively mindlrming something tr musi but one in this woul world. I tas 190 million people didd from this kind of worthiness. Fo earter. When youre io the lowert resson there because when they cid that.with the pame thing. The sewr of shis ptise of this lide of madies and shose are amrays that farcer. When you choose to view stress in this
+
+
+For comparison, here is the original text from the original corpus:
+>**re can do it faster. Lowcost providers c**an do it cheaper. So what really matters are the more rightbrained creative conceptual kinds of abilities. Think about your own work. Think about your own work. Are the problems that you face or even the problems weve been talking about here do they have a clear set of rules and a single solution? No. The rules are mystifying. The solution if it exists at all is surprising and not obvious. Everybody in this room is dealing with their own version of the candle problem. And for candle problems of any kind in any field those ifthen rewards the things around
+
+Model 2 also does an accurate job of predicting the exact following characters in the original text, up to a point. The generated text that follows seems to be simply text copied in from another portion of the corpus.
+
+#### Model 3, after 50 fits.
+
+This model used an 80 character sequence, as opposed to 40 in the first two models.
+Seed sequence: `Kitkat in all further correspondence. I didnt hear back. I thought Ive gone too`
+
+Predicted text (original sequence in bold):
+> **Kitkat in all further correspondence. I didnt hear back. I thought Ive gone too** many of the second things that we are the second things that we are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the se
+
+Comparing to the original corpus is not necessary, since this 
 
 ## 7. Conclusion
 
 
-## 8. Next Steps & Future work
+## 8. Next Steps
 
 
 ## 9. Acknowledgements
