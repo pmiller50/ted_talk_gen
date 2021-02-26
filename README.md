@@ -21,7 +21,7 @@ A node in a LSTM layer consists of "remember" and "forget" gates, which allow it
 Christopher Olah has written a detailed blog post [Understanding LSTM Networks](https://colah.github.io/posts/2015-08-Understanding-LSTMs/),
  posted on August 27, 2015 which explains in great detail the inner workings of the individual cells in a LSTM model.
 
-As someone who is the relatively early stages of his data science learning, I was somewhat surprised to realize the real work being done by a text generator, can be simply summarized as as multi-class classification problem.
+As someone who is the relatively early stages of his data science learning, I was somewhat surprised to realize the real work being done by a text generator, can be simply summarized as a multi-class classification problem.
 
 Borrowed from a [Towards Data Science post by Javaid Nabi](https://towardsdatascience.com/machine-learning-multiclass-classification-with-imbalanced-data-set-29f6a177c1a):
 > Multiclass Classification: A classification task with more than two classes; e.g., classify a set of images of fruits which may be oranges, apples, or pears. Multi-class classification makes the assumption that each sample is assigned to one and only one label: a fruit can be either an apple or a pear but not both at the same time.
@@ -51,7 +51,7 @@ All text generation models require a group of text, also called a corpus. Many e
 
 For this project, in order to create a model to generate text in the spirit of a TED talk, the input data must naturally consist of text from the TED.com web site.
 
-A Python program using the BeautifulSoup library scans the [TED.com libary browse page](https://www.ted.com/talks) to retrieve a list of urls for all talks in English. This list is then fed into another BeautifulSoup scraper, which captures the transcript for every talk.
+A Python program using the BeautifulSoup library scans the [TED.com library browse page](https://www.ted.com/talks) to retrieve a list of URLs for all talks in English. This list is then fed into another BeautifulSoup scraper, which captures the transcript for every talk.
 
 The web scraper creates a Pandas Dataframe of **4,384** TED talks.
 
@@ -60,7 +60,7 @@ The web scraper creates a Pandas Dataframe of **4,384** TED talks.
 
 Data cleaning was fairly minimal, although there were 103 TED talks that were missing a transcript for whatever reason. Having over 4000 talks is more than enough for the model, so any row with missing data was dropped.
 
-The TED web site uses tags to identify what topics are related to a talk, such as science, business, climate change, society, etc. 
+The TED web site uses tags to identify what topics are related to a talk, such as science, business, climate change, society, etc.
 
 The tags column as scraped was stored as one string. In order to sort and group by tag values, the tag labels were extracted so the column contained a list of separate tag values.
 
@@ -219,13 +219,63 @@ Seed sequence: `Kitkat in all further correspondence. I didnt hear back. I thoug
 Predicted text (original sequence in bold):
 > **Kitkat in all further correspondence. I didnt hear back. I thought Ive gone too** many of the second things that we are the second things that we are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the second are the se
 
-Comparing to the original corpus is not necessary, since this 
+Comparing to the original corpus is not necessary, since this is mostly garbage output.
+
+#### Model 3, after 150 fits.
+
+Seed sequence: `nto a better future. Maybe this came from my love of Legos and the freedom of ex`
+
+Predicted text (original sequence in bold):
+> **nto a better future. Maybe this came from my love of Legos and the freedom of ex**er and I was a sesuire of the sight of the sight of the sight of the sight of the sight of the sesearch and they were seally wanking and the second thing that we are seloesing on the people who were the second tecond was that they were seally wasching the second technology of the sesearch and they were seally what they were
+seally selling about the people who were the second teconds to selldd to see the second technology of
+the sesearch and they were seally selling about the people who had the second tertion of the sesearch
+and they were seally what they were seally selling about the people wh
+
+
+For comparison, here is the original text from the original corpus:
+>**nto a better future. Maybe this came from my love of Legos and the freedom of ex**pression that I felt
+when I was building with them. And this was also derived from my family and my mentors who always
+make me feel whole and good about myself. Now today my ambitions have changed a little bit I’d like
+to go into the field of Biology maybe cell biology or genetics or biochemistry or really anything.
+This is a friend of mine who I look up to Francis Collins the director of the NIH and this is us at
+TEDMED last year chatting away. I feel that no matter what I choose to become I believe that I can
+cha
+
+Model 3 was more complex, since it had 3 layers of nodes, so it's possible it would perform better after more than 150 fits. Unfortunately, each 50 epochs took almost three hours to run, so further fitting requires a challenging amount of time.
 
 ## 7. Conclusion
+
+Of the three models tested, Model 2 seemed to perform the best. However, the results were still uneven. The model would correctly predict the exact match of a sentence, then after 200 characters or so would venture into randomness.
+
+In general, it seems as if the models would predict the next characters and sometimes words, but it begs the question: Is this text generation?  At times the text generated was simply a repeat of a different, randomly selected portion of the corpus. It's possible that a larger corpus would provide a larger vocabulary, and more randomness in the output, hence presenting a more interesting output.
+
+Positive conclusions:
+* Models did improve after multiple fits
+* The first two characters or so closely matched the original text. For some models, if it executed too many epochs, the model become overfit, and would simply repeat back an exact match of the corpus.
+* This project was a good way to learn more about neural networks, and how a machine learning text generator works.
+
+Negative conclusions:
+* Running the models is time consuming. The simplest model took 45 minutes to fit 50 epochs, while the three layer model took 170 minutes to fit 50 epochs.
+* Powerful hardware is needed to run the models. I used Google Colab Pro to run the LSTM models, which ran on a GPU, with 27 GB of RAM and models still took a very long time to process. As an experiment, I loaded a text file which contained all 4000 TED talks transcripts (approx 40MB) and attempted to load it into Model One, but Google Colab Pro crashed after running out of memory.
+* These simple models can not compare massively trained and expertly designed models such as GPT-3.
 
 
 ## 8. Next Steps
 
+There are a few possibilities to improve the models, such as a larger corpus, or different configurations, but a better idea might be to use the available API to use the GPT engine instead.
+
+Other applications of LSTM models include:
+* Music composition
+* Handwriting recognition
+* Time series modeling
+
 
 ## 9. Acknowledgements
 
+Thank you to the following blog posts and YouTube videos:
+* Christopher Olah: [Understanding LSTM Networks](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+* Dan Nelson: [Text Generation with Python and TensorFlow/Keras](https://stackabuse.com/text-generation-with-python-and-tensorflow-keras/)
+* Jason Brownlee PhD: [Text Generation With LSTM Recurrent Neural Networks in Python with Keras](https://machinelearningmastery.com/text-generation-lstm-recurrent-neural-networks-python-keras/)
+* Jason Brownlee PhD: [How to Reshape Input Data for Long Short-Term Memory Networks in Keras](https://machinelearningmastery.com/reshape-input-data-long-short-term-memory-networks-keras/)
+* Cory Maklin: [LSTM Recurrent Neural Network Keras Example](https://towardsdatascience.com/machine-learning-recurrent-neural-networks-and-long-short-term-memory-lstm-python-keras-example-86001ceaaebc)
+* DigitalSreeni: [167 - Text prediction using LSTM (English text)](https://youtu.be/zyCpntcVKSo?t=1)
